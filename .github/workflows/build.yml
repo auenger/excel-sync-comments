@@ -10,7 +10,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-latest]
         include:
           - os: windows-latest
             output_name: 批注同步工具.exe
@@ -18,9 +18,6 @@ jobs:
           - os: macos-latest
             output_name: 批注同步工具
             artifact_name: 批注同步工具_macOS
-          - os: ubuntu-latest
-            output_name: 批注同步工具
-            artifact_name: 批注同步工具_Linux
 
     runs-on: ${{ matrix.os }}
 

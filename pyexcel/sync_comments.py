@@ -5,9 +5,17 @@ from openpyxl.utils import column_index_from_string
 
 # ================= 配置加载 =================
 import os
+import sys
 import configparser
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# 获取可执行文件所在目录（支持 PyInstaller 打包）
+if getattr(sys, 'frozen', False):
+    # 如果是打包后的可执行文件
+    SCRIPT_DIR = os.path.dirname(sys.executable)
+else:
+    # 如果是源代码运行
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 CONFIG_FILE = os.path.join(SCRIPT_DIR, 'config.ini')
 
 # 默认配置（如果配置文件不存在时使用）

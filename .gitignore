@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# PyInstaller
+*.spec
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+pyexcel/target_updated.xlsx
+pyexcel/sync_log_*.txt
+pyexcel/批注同步工具_macOS_*/
+pyexcel/批注同步工具_Windows_*/
+pyexcel/批注同步工具_Linux_*/
+pyexcel/Windows打包文件_*/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Compiled executables
+pyexcel/dist/
+pyexcel/build/
+
+# Distribution packages
+*.zip
+!.github/
+
+# Node modules (for hr-dashboard)
+hr-dashboard/node_modules/
+hr-dashboard/dist/
+hr-dashboard/build/
+hr-dashboard/.next/
+hr-dashboard/out/
+
+# npm
+package-lock.json
+yarn.lock

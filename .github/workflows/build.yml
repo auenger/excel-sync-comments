@@ -1,0 +1,90 @@
+name: Build Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            output_name: 批注同步工具.exe
+            artifact_name: 批注同步工具_Windows
+          - os: macos-latest
+            output_name: 批注同步工具
+            artifact_name: 批注同步工具_macOS
+          - os: ubuntu-latest
+            output_name: 批注同步工具
+            artifact_name: 批注同步工具_Linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install openpyxl pyinstaller
+
+    - name: Build executable (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        cd pyexcel
+        pyinstaller --onefile --name=批注同步工具 --clean --add-data="config.ini;." sync_comments.py
+
+    - name: Build executable (macOS/Linux)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cd pyexcel
+        pyinstaller --onefile --name=批注同步工具 --clean --add-data="config.ini:." sync_comments.py
+
+    - name: Create distribution package (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        cd pyexcel
+        $distName = "批注同步工具_Windows_$(Get-Date -Format 'yyyyMMdd')"
+        New-Item -ItemType Directory -Path $distName
+        Copy-Item "dist\批注同步工具.exe" -Destination $distName
+        Copy-Item "config.ini" -Destination $distName
+        Copy-Item "使用说明.md" -Destination $distName
+        Copy-Item "使用说明.md" -Destination "$distName\使用说明.txt"
+        Compress-Archive -Path $distName -DestinationPath "$distName.zip"
+
+    - name: Create distribution package (macOS/Linux)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cd pyexcel
+        distName="批注同步工具_${{ matrix.artifact_name }}_$(date +%Y%m%d)"
+        mkdir -p $distName
+        cp dist/批注同步工具 $distName/
+        cp config.ini $distName/
+        cp 使用说明.md $distName/
+        cp 使用说明.md $distName/使用说明.txt
+        zip -r $distName.zip $distName
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: pyexcel/*.zip
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: pyexcel/*.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

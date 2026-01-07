@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 转 JSON 转换器</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .upload-area:hover {
+            background: #e9ecef;
+            border-color: #764ba2;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            margin: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .preview-section {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            margin-top: 0.5rem;
+        }
+
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1.5rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">📊 Excel 转 JSON 转换器</h1>
+            <p>将 HR 考勤 Excel 转换为结构化 JSON 数据</p>
+        </div>
+
+        <div class="content">
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+                <h2 style="color: #667eea; margin-bottom: 0.5rem;">点击上传 Excel 文件</h2>
+                <p style="color: #6c757d;">支持 .xlsx 和 .xls 格式</p>
+            </div>
+
+            <div id="resultSection" style="display: none;">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalRecords">0</div>
+                        <div class="stat-label">总记录数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalColumns">0</div>
+                        <div class="stat-label">数据列数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalDepts">0</div>
+                        <div class="stat-label">部门数量</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalGroups">0</div>
+                        <div class="stat-label">组别数量</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin: 2rem 0;">
+                    <button class="btn btn-success" onclick="downloadJSON()">
+                        💾 下载 JSON 文件
+                    </button>
+                    <button class="btn" onclick="copyToClipboard()">
+                        📋 复制 JSON
+                    </button>
+                </div>
+
+                <div id="successMessage" style="display: none;" class="success-message">
+                    ✅ JSON 文件已生成！您可以下载或复制数据。
+                </div>
+
+                <div class="preview-section">
+                    <h3 style="margin-bottom: 1rem; color: #495057;">📄 JSON 预览（前 20 行）</h3>
+                    <pre id="jsonPreview"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let processedData = null;
+
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
+                    const rawSheetData = XLSX.utils.sheet_to_json(firstSheet, {
+                        header: 1,
+                        defval: ''
+                    });
+
+                    processedData = processExcelData(rawSheetData);
+                    displayResults(processedData);
+                } catch (error) {
+                    console.error('处理文件时出错:', error);
+                    alert('文件处理失败，请确保文件格式正确！');
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processExcelData(rawData) {
+            if (rawData.length < 3) {
+                alert('Excel 文件格式不正确！');
+                return null;
+            }
+
+            const headerRow1 = rawData[0];
+            const headerRow2 = rawData[1];
+
+            // 合并列名
+            const mergedColumns = [];
+            for (let i = 0; i < headerRow2.length; i++) {
+                const category = headerRow1[i] || '';
+                const subCategory = headerRow2[i] || '';
+
+                if (!category || category === '基本信息' || category.trim() === '') {
+                    mergedColumns.push(subCategory);
+                } else {
+                    mergedColumns.push(`${category}_${subCategory}`);
+                }
+            }
+
+            // 处理数据行
+            const records = [];
+            for (let i = 2; i < rawData.length; i++) {
+                const row = rawData[i];
+                if (!row || row.length === 0 || !row[0]) continue;
+
+                const rowData = {};
+                for (let j = 0; j < mergedColumns.length; j++) {
+                    const value = row[j];
+                    // 转换数值类型
+                    if (typeof value === 'number') {
+                        rowData[mergedColumns[j]] = value;
+                    } else {
+                        rowData[mergedColumns[j]] = value || '';
+                    }
+                }
+                records.push(rowData);
+            }
+
+            // 提取元数据
+            const departments = [...new Set(records.map(r => r['部门']).filter(Boolean))].sort();
+            const groups = [...new Set(records.map(r => r['组别']).filter(Boolean))].sort();
+            const areas = [...new Set(records.map(r => r['区域']).filter(Boolean))].sort();
+            const positions = [...new Set(records.map(r => r['岗位']).filter(Boolean))].sort();
+
+            // 构建最终的 JSON 结构
+            return {
+                meta: {
+                    generatedAt: new Date().toISOString(),
+                    totalRecords: records.length,
+                    columns: mergedColumns,
+                    filters: {
+                        departments: departments,
+                        groups: groups,
+                        areas: areas,
+                        positions: positions
+                    }
+                },
+                data: records
+            };
+        }
+
+        function displayResults(jsonData) {
+            if (!jsonData) return;
+
+            document.getElementById('totalRecords').textContent = jsonData.meta.totalRecords;
+            document.getElementById('totalColumns').textContent = jsonData.meta.columns.length;
+            document.getElementById('totalDepts').textContent = jsonData.meta.filters.departments.length;
+            document.getElementById('totalGroups').textContent = jsonData.meta.filters.groups.length;
+
+            // 显示 JSON 预览（前 20 条记录）
+            const previewData = {
+                meta: jsonData.meta,
+                data: jsonData.data.slice(0, 20)
+            };
+            document.getElementById('jsonPreview').textContent = JSON.stringify(previewData, null, 2);
+
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'block';
+        }
+
+        function downloadJSON() {
+            if (!processedData) return;
+
+            const jsonString = JSON.stringify(processedData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'hrdata.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('✅ JSON 文件已下载！文件名：hrdata.json');
+        }
+
+        function copyToClipboard() {
+            if (!processedData) return;
+
+            const jsonString = JSON.stringify(processedData, null, 2);
+            navigator.clipboard.writeText(jsonString).then(() => {
+                alert('✅ JSON 数据已复制到剪贴板！');
+            }).catch(err => {
+                console.error('复制失败:', err);
+                alert('❌ 复制失败，请手动复制预览区域的内容');
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -13,11 +13,11 @@ jobs:
         os: [windows-latest, macos-latest]
         include:
           - os: windows-latest
-            output_name: 批注同步工具.exe
-            artifact_name: 批注同步工具_Windows
+            output_name: ExcelCommentSync.exe
+            artifact_name: ExcelCommentSync-Windows
           - os: macos-latest
-            output_name: 批注同步工具
-            artifact_name: 批注同步工具_macOS
+            output_name: ExcelCommentSync
+            artifact_name: ExcelCommentSync-macOS
 
     runs-on: ${{ matrix.os }}
 
@@ -39,37 +39,37 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         cd pyexcel
-        pyinstaller --onefile --name=批注同步工具 --clean --add-data="config.ini;." sync_comments.py
+        pyinstaller --onefile --name=ExcelCommentSync --clean --add-data="config.ini;." sync_comments.py
 
     - name: Build executable (macOS/Linux)
       if: matrix.os != 'windows-latest'
       run: |
         cd pyexcel
-        pyinstaller --onefile --name=批注同步工具 --clean --add-data="config.ini:." sync_comments.py
+        pyinstaller --onefile --name=ExcelCommentSync --clean --add-data="config.ini:." sync_comments.py
 
     - name: Create distribution package (Windows)
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
         cd pyexcel
-        $distName = "批注同步工具_Windows_$(Get-Date -Format 'yyyyMMdd')"
+        $distName = "ExcelCommentSync-Windows-$(Get-Date -Format 'yyyyMMdd')"
         New-Item -ItemType Directory -Path $distName
-        Copy-Item "dist\批注同步工具.exe" -Destination $distName
+        Copy-Item "dist\ExcelCommentSync.exe" -Destination $distName
         Copy-Item "config.ini" -Destination $distName
-        Copy-Item "使用说明.md" -Destination $distName
-        Copy-Item "使用说明.md" -Destination "$distName\使用说明.txt"
+        if (Test-Path "使用说明.md") { Copy-Item "使用说明.md" -Destination $distName }
+        if (Test-Path "README.md") { Copy-Item "README.md" -Destination $distName }
         Compress-Archive -Path $distName -DestinationPath "$distName.zip"
 
     - name: Create distribution package (macOS/Linux)
       if: matrix.os != 'windows-latest'
       run: |
         cd pyexcel
-        distName="批注同步工具_${{ matrix.artifact_name }}_$(date +%Y%m%d)"
+        distName="ExcelCommentSync-${{ matrix.artifact_name }}-$(date +%Y%m%d)"
         mkdir -p $distName
-        cp dist/批注同步工具 $distName/
+        cp dist/ExcelCommentSync $distName/
         cp config.ini $distName/
-        cp 使用说明.md $distName/
-        cp 使用说明.md $distName/使用说明.txt
+        [ -f "使用说明.md" ] && cp "使用说明.md" $distName/ || true
+        [ -f "README.md" ] && cp "README.md" $distName/ || true
         zip -r $distName.zip $distName
 
     - name: Upload artifact
